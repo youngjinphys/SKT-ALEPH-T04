@@ -1,0 +1,21 @@
+services:
+  security-pulse:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: "4173"
+      DATA_DIR: /app/data
+      UPSTREAM_CONTACT_URL: ${UPSTREAM_CONTACT_URL:-https://github.com/youngjinphys/SKT-ALEPH-T04}
+    volumes:
+      - security-pulse-data:/app/data
+    ports:
+      - "127.0.0.1:4173:4173"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  security-pulse-data:

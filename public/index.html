@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#05080d">
+  <meta name="description" content="ALEPH T04 Security Pulse — public, aggregate-only network telemetry with honest stale-state handling.">
+  <title>Security Pulse / ALEPH T04</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="scanline" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Security Pulse home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span><strong>SECURITY PULSE</strong><small>ALEPH / T04</small></span>
+    </a>
+    <nav aria-label="dashboard sections">
+      <a href="#live">Live</a><a href="#history">History</a><a href="#lab">Failure Lab</a><a href="#provenance">Provenance</a>
+    </nav>
+    <div class="clock" id="clock" aria-label="Asia Seoul clock">--:--:-- KST</div>
+  </header>
+
+  <main id="top">
+    <section class="hero" id="live">
+      <div class="hero-copy">
+        <p class="lede">공개 인터넷 센서가 본 가장 최근 완료 UTC 하루의 TCP/22 제출 보고량을 보존하고, 실패했을 때는 마지막 정상값을 숨기지 않고 <em>stale</em>로 표시합니다.</p>
+        <h1>Internet attack telemetry,<br><span>without pretending it is fresh.</span></h1>
+        <p class="intro">원자료 전체를 노출하지 않고 aggregate count 하나만 수집합니다. 실제 공개 데이터와 합성 장애 시험은 서로 완전히 분리됩니다.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="primary" id="refreshLive"><span>LIVE REFRESH</span><b>↗</b></button>
+        <p id="refreshHint">Same completed UTC day is served from preserved storage.</p>
+      </div>
+    </section>
+
+    <section class="telemetry-shell" aria-label="live telemetry summary">
+      <div class="signal-column">
+        <div class="status-line">
+          <span class="status-dot unknown" id="liveDot"></span>
+          <span id="liveStatus">NO LIVE RECORD</span>
+          <span class="mono" id="liveError">error: none</span>
+        </div>
+        <p class="status-detail" id="liveDetail" role="status">No live fetch has been attempted. No value is being presented as current.</p>
+        <div class="metric-wrap">
+          <div class="metric" id="liveValue">—</div>
+          <div class="unit" id="liveUnit">UNIT: — · SIGNAL: TCP/22</div>
+        </div>
+        <div class="delta-row">
+          <span class="delta-label">PREVIOUS STORED DAY</span>
+          <strong id="liveDelta">insufficient history</strong>
+        </div>
+        <svg class="spark" viewBox="0 0 640 132" role="img" aria-label="daily reading trend" id="sparkline">
+          <defs><linearGradient id="areaFade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6ef2cf" stop-opacity=".26"/><stop offset="1" stop-color="#6ef2cf" stop-opacity="0"/></linearGradient></defs>
+          <path id="sparkArea" d="M0 118 L640 118 L640 118 L0 118 Z" fill="url(#areaFade)"/>
+          <path id="sparkPath" d="M0 118 L640 118" fill="none" stroke="currentColor" stroke-width="3" vector-effect="non-scaling-stroke"/>
+        </svg>
+      </div>
+      <aside class="meta-column">
+        <dl>
+          <div><dt>Source</dt><dd id="sourceName">SANS ISC / DShield</dd></div>
+          <div><dt>Source period</dt><dd id="sourcePeriod">Not fetched</dd></div>
+          <div><dt>Source observed</dt><dd id="sourceObserved">—</dd></div>
+          <div><dt>Fetched at</dt><dd id="fetchedAt">—</dd></div>
+          <div><dt>Last attempt</dt><dd id="lastAttempt">—</dd></div>
+          <div><dt>Record timezone</dt><dd>Asia/Seoul</dd></div>
+          <div><dt>Signal</dt><dd>Port 22 submitted reports</dd></div>
+          <div><dt>Live evidence</dt><dd id="evidenceCount">0 / 2 actual KST dates</dd></div>
+          <div><dt>Raw digest</dt><dd class="hash" id="rawHash">—</dd></div>
+        </dl>
+        <a class="source-link" id="sourceLink" href="https://isc.sans.edu/api/" rel="noopener noreferrer" target="_blank">Open public source ↗</a>
+      </aside>
+    </section>
+
+    <section class="history section" id="history">
+      <div class="section-head"><div><span class="index">01</span><h2>Preserved daily readings</h2></div><p>같은 KST 날짜에는 새 행을 만들지 않고 같은 record를 원자적으로 갱신합니다.</p></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Record date</th><th>Value</th><th>Source period</th><th>Source observed</th><th>First fetch</th><th>Last fetch</th><th>Source URL</th><th>Integrity</th></tr></thead><tbody id="historyBody"><tr><td colspan="8" class="empty">No live records yet.</td></tr></tbody></table>
+      </div>
+    </section>
+
+    <section class="failure section" id="lab">
+      <div class="section-head"><div><span class="index">02</span><h2>Deterministic failure lab</h2></div><p>공개 fixture만 사용합니다. 실제 live 저장소와 섞이지 않으며 브라우저 세션별로 격리됩니다.</p></div>
+      <div class="lab-layout">
+        <div class="lab-controls">
+          <button class="ghost" data-action="reset">RESET SYNTHETIC STATE</button>
+          <div class="replay-strip" id="replayStrip"><div><span>freshness</span><b id="replayFreshness">empty</b></div><div><span>error</span><b id="replayError">none</b></div><div><span>last good</span><b id="replayValue">—</b></div><div><span>rows</span><b id="replayRows">0</b></div></div>
+          <button class="retry" id="retryReplay" hidden>RETRY → T04-RECOVER-D2</button>
+          <div class="fixture-grid" id="fixtureGrid"></div>
+        </div>
+        <div class="terminal" aria-live="polite">
+          <div class="terminal-bar"><span></span><span></span><span></span><b>replay/state</b></div>
+          <pre id="terminalOutput">$ synthetic state is empty\n</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="provenance section" id="provenance">
+      <div class="section-head"><div><span class="index">03</span><h2>Trust boundary</h2></div><p>공격 데이터를 많이 모으는 대신, 무엇을 믿고 무엇을 버리는지 명확히 합니다.</p></div>
+      <div class="flow" role="list" aria-label="data trust pipeline">
+        <div class="node" role="listitem"><b>PUBLIC UPSTREAM</b><span>DShield aggregate API</span></div><i>→</i>
+        <div class="node" role="listitem"><b>SERVER FETCH</b><span>timeout + status mapping</span></div><i>→</i>
+        <div class="node" role="listitem"><b>VALIDATE</b><span>date + numeric records</span></div><i>→</i>
+        <div class="node" role="listitem"><b>NORMALIZE</b><span>T04 schema semantics</span></div><i>→</i>
+        <div class="node" role="listitem"><b>PRESERVE</b><span>KST daily upsert + SHA-256</span></div>
+      </div>
+      <div class="interpretation-note"><b>Interpretation boundary</b><span>DShield <code>records</code>는 센서가 제출한 port 22 관측 보고 건수입니다. 고유 공격자 수나 확정된 침해 건수를 뜻하지 않습니다.</span></div>
+      <div class="audit-grid"><article><header>UPSTREAM AGGREGATE SNAPSHOT</header><pre id="rawAggregate">awaiting live fetch</pre></article><article><header>NORMALIZED READING</header><pre id="normalizedView">awaiting live fetch</pre></article></div>
+      <div class="principles">
+        <article><h3>Data minimization</h3><p>IP, username, password, request body 같은 개별 공격 기록은 수집하지 않습니다. 집계 건수만 저장합니다.</p></article>
+        <article><h3>Honest failure</h3><p>timeout·auth·rate limit·offline·schema drift를 0으로 위장하지 않습니다. 마지막 정상값은 유지하되 stale로 표시합니다.</p></article>
+        <article><h3>Comparable windows</h3><p>진행 중인 “오늘” 대신 가장 최근 완료된 UTC 하루만 읽어 서로 같은 길이의 관측창을 비교합니다.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>SECURITY PULSE / ALEPH T04</span><span>Aggregate-only · Public source · No login · No personal records</span></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

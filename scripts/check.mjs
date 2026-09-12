@@ -22,7 +22,8 @@ const secretPatterns=[
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/i,
   /sk-[A-Za-z0-9]{20,}/,
   /AKIA[0-9A-Z]{16}/,
-  /ghp_[A-Za-z0-9]{30,}/
+  /ghp_[A-Za-z0-9]{30,}/,
+  /sb_secret_[A-Za-z0-9_-]{20,}/
 ];
 const bad=[];
 for(const f of files){

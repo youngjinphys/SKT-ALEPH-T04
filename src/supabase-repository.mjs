@@ -44,10 +44,13 @@ export class SupabaseStateRepository {
   headers(prefer = null) {
     const headers = {
       apikey: this.key,
-      authorization: `Bearer ${this.key}`,
       'content-type': 'application/json',
       accept: 'application/json'
     };
+    // New sb_secret_* keys are API keys, not JWTs. Sending them as Bearer
+    // credentials makes Supabase attempt JWT parsing and can return Invalid JWT.
+    // Legacy service_role keys are JWTs and retain Bearer compatibility.
+    if (/^eyJ[^.]*\.[^.]+\.[^.]+$/.test(this.key)) headers.authorization = `Bearer ${this.key}`;
     if (prefer) headers.prefer = prefer;
     return headers;
   }
@@ -89,9 +92,7 @@ export class SupabaseStateRepository {
     return { exists: true, state: row.state, version: Number(row.version) };
   }
 
-  async read() {
-    return (await this.readVersioned()).state;
-  }
+  async read() { return (await this.readVersioned()).state; }
 
   async insertIfMissing(state) {
     const res = await this.request(this.endpoint({ on_conflict: 'state_key', select: 'state,version' }), {
@@ -104,11 +105,7 @@ export class SupabaseStateRepository {
   }
 
   async compareAndSwap(expectedVersion, state) {
-    const res = await this.request(this.endpoint({
-      state_key: `eq.${encodeFilterValue(this.stateKey)}`,
-      version: `eq.${expectedVersion}`,
-      select: 'state,version'
-    }), {
+    const res = await this.request(this.endpoint({ state_key: `eq.${encodeFilterValue(this.stateKey)}`, version: `eq.${expectedVersion}`, select: 'state,version' }), {
       method: 'PATCH',
       headers: this.headers('return=representation'),
       body: JSON.stringify({ state, version: expectedVersion + 1, updated_at: new Date().toISOString() })
@@ -117,9 +114,7 @@ export class SupabaseStateRepository {
     return Array.isArray(rows) && rows.length > 0;
   }
 
-  async write(state) {
-    return this.transact(() => state);
-  }
+  async write(state) { return this.transact(() => state); }
 
   async transact(mutator) {
     for (let attempt = 0; attempt < this.maxRetries; attempt += 1) {

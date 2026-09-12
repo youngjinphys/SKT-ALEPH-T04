@@ -11,17 +11,26 @@ test('requires server-side Supabase URL and secret key',()=>{
   assert.throws(()=>supabaseConfigFromEnv({SUPABASE_URL:'http://abc.supabase.co',SUPABASE_SECRET_KEY:'x'}),/HTTPS/);
 });
 
-test('empty Supabase table maps to empty live state without creating a row',async()=>{
+test('new Supabase secret keys are sent only as apikey, never as Bearer JWTs',async()=>{
   const calls=[];
-  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key:'secret',fetchFn:async(url,init)=>{calls.push([url.toString(),init]);return response(200,[]);}});
-  const state=await repo.read();
-  assert.equal(state.kind,'live'); assert.equal(state.daily_readings.length,0); assert.equal(calls.length,1); assert.equal(calls[0][1].method,'GET');
-  assert.equal(calls[0][1].headers.apikey,'secret'); assert.equal(calls[0][1].headers.authorization,'Bearer secret');
+  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key:'sb_secret_test',fetchFn:async(url,init)=>{calls.push([url.toString(),init]);return response(200,[]);}});
+  await repo.read();
+  assert.equal(calls[0][1].headers.apikey,'sb_secret_test');
+  assert.equal('authorization' in calls[0][1].headers,false);
+});
+
+test('legacy service_role JWT keeps Authorization Bearer compatibility',async()=>{
+  const key='eyJhbGciOiJIUzI1NiJ9.payload.signature';
+  const calls=[];
+  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key,fetchFn:async(url,init)=>{calls.push([url.toString(),init]);return response(200,[]);}});
+  await repo.read();
+  assert.equal(calls[0][1].headers.apikey,key);
+  assert.equal(calls[0][1].headers.authorization,`Bearer ${key}`);
 });
 
 test('transaction inserts the single live state row when missing',async()=>{
   const calls=[];
-  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key:'secret',fetchFn:async(url,init)=>{
+  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key:'sb_secret_test',fetchFn:async(url,init)=>{
     calls.push([url.toString(),init]);
     if(init.method==='GET')return response(200,[]);
     if(init.method==='POST')return response(201,[{state:{kind:'live'},version:1}]);
@@ -35,7 +44,7 @@ test('transaction inserts the single live state row when missing',async()=>{
 test('optimistic compare-and-swap retries instead of losing a concurrent update',async()=>{
   let getCount=0, patchCount=0;
   const first={...emptyState('live'),sequence:1}; const second={...emptyState('live'),sequence:4};
-  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key:'secret',fetchFn:async(url,init)=>{
+  const repo=new SupabaseStateRepository({url:'https://abc.supabase.co',key:'sb_secret_test',fetchFn:async(url,init)=>{
     if(init.method==='GET'){getCount++;return response(200,[{state:getCount===1?first:second,version:getCount===1?2:3}]);}
     if(init.method==='PATCH'){patchCount++;return response(200,patchCount===1?[]:[{state:{},version:4}]);}
     throw new Error('unexpected');
